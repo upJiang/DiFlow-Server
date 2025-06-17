@@ -1899,7 +1899,7 @@ this.redisService.set(signupData.username, signupData.password);
 
 ![企业微信截图_1733136636853.png](https://p0-xtjj-private.juejin.cn/tos-cn-i-73owjymdk6/ae695a11aaa548fabec11cd62be7c3a4~tplv-73owjymdk6-jj-mark-v1:0:0:0:0:5o6Y6YeR5oqA5pyv56S-5Yy6IEAgX2ppYW5n:q75.awebp?policy=eyJ2bSI6MywidWlkIjoiODYyNDg3NTIyMzE0MzY2In0%3D&rk3s=f64ab15b&x-orig-authkey=f32326d3454f2ac7e96d3d06cdbb035152127018&x-orig-expires=1742990783&x-orig-sign=%2BMDO7clKmd52x6wWBcI08bOKx%2FU%3D)
 
-![企业微信截图_17331366661836.png](https://p0-xtjj-private.juejin.cn/tos-cn-i-73owjymdk6/f50ceaa9f2b24f479ee6a22d0176f6d4~tplv-73owjymdk6-jj-mark-v1:0:0:0:0:5o6Y6YeR5oqA5pyv56S-5Yy6IEAgX2ppYW5n:q75.awebp?policy=eyJ2bSI6MywidWlkIjoiODYyNDg3NTIyMzE0MzY2In0%3D&rk3s=f64ab15b&x-orig-authkey=f32326d3454f2ac7e96d3d06cdbb035152127018&x-orig-expires=1742990783&x-orig-sign=FwyHXFlyjQAe9gzMVQpnPmA3bto%3D)
+![企业微信截图_17331330011836.png](https://p0-xtjj-private.juejin.cn/tos-cn-i-73owjymdk6/f50ceaa9f2b24f479ee6a22d0176f6d4~tplv-73owjymdk6-jj-mark-v1:0:0:0:0:5o6Y6YeR5oqA5pyv56S-5Yy6IEAgX2ppYW5n:q75.awebp?policy=eyJ2bSI6MywidWlkIjoiODYyNDg3NTIyMzE0MzY2In0%3D&rk3s=f64ab15b&x-orig-authkey=f32326d3454f2ac7e96d3d06cdbb035152127018&x-orig-expires=1742990783&x-orig-sign=FwyHXFlyjQAe9gzMVQpnPmA3bto%3D)
 
 - 再尝试请求成功的接口
 

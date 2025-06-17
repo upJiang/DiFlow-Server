@@ -54,14 +54,14 @@ jobs:
             docker ps -q --filter "name=diflow-server" | grep -q . && docker stop diflow-server || echo "Container diflow-server is not running"
             docker ps -a -q --filter "name=diflow-server" | grep -q . && docker rm diflow-server || echo "Container diflow-server does not exist"
 
-            # 检查端口 6666 是否被占用，如果被占用，停止并删除相关容器
-            docker ps -q --filter "publish=6666" | grep -q . && \
-              docker ps -q --filter "publish=6666" | xargs -I {} docker stop {} && \
-              docker ps -a -q --filter "publish=6666" | xargs -I {} docker rm {} || echo "Port 6666 is not occupied"
+            # 检查端口 3001 是否被占用，如果被占用，停止并删除相关容器
+            docker ps -q --filter "publish=3001" | grep -q . && \
+              docker ps -q --filter "publish=3001" | xargs -I {} docker stop {} && \
+              docker ps -a -q --filter "publish=3001" | xargs -I {} docker rm {} || echo "Port 3001 is not occupied"
 
             # 启动 Docker Compose 
             docker-compose down # 确保旧容器被停止并删除
             docker-compose up -d --build # 使用 Docker Compose 启动新容器
 
             # 运行新容器并挂载卷
-            docker run -d --name diflow-server -p 6666:6666 -v /www/wwwroot/blog.junfeng530.xyz/uploads:/www/wwwroot/blog.junfeng530.xyz/uploads registry.cn-shenzhen.aliyuncs.com/diflow/diflow:latest
+            docker run -d --name diflow-server -p 3001:3001 -v /www/wwwroot/blog.junfeng530.xyz/uploads:/www/wwwroot/blog.junfeng530.xyz/uploads registry.cn-shenzhen.aliyuncs.com/diflow/diflow:latest
