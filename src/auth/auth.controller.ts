@@ -1,6 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateAuthDto } from './dto/create-auth.dto';
+import { CreateAuthDto, EmailAuthDto } from './dto/create-auth.dto';
 import { Public } from 'src/common/public.decorator';
 
 @Controller('auth')
@@ -27,5 +27,15 @@ export class AuthController {
   @Post('/login')
   login(@Body() loginData: CreateAuthDto) {
     return this.authService.login(loginData);
+  }
+
+  /**
+   * 基于邮箱的登录或创建用户
+   * @param emailData 邮箱认证数据
+   */
+  @Public()
+  @Post('/email-login')
+  emailLogin(@Body() emailData: EmailAuthDto) {
+    return this.authService.emailLogin(emailData);
   }
 }

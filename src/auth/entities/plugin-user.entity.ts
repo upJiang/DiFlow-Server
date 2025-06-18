@@ -4,6 +4,7 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
 
 @Entity('plugin_users')
@@ -31,4 +32,11 @@ export class PluginUserEntity {
 
   @UpdateDateColumn({ comment: '更新时间' })
   updatedAt: Date;
+
+  // 关系字段 - 延迟导入以避免循环依赖
+  @OneToMany('CursorRuleEntity', 'user')
+  cursorRules: any[];
+
+  @OneToMany('CursorMcpEntity', 'user')
+  cursorMcps: any[];
 }

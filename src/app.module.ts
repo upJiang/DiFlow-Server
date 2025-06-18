@@ -4,9 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AuthModule as OldAuthModule } from './auth/auth.module';
-import { AuthModule } from './modules/auth/auth.module';
-import { UserModule } from './modules/user/user.module';
+import { AuthModule } from './auth/auth.module';
 import { CursorModule } from './modules/cursor/cursor.module';
 import { PostsModule } from './posts/posts.module';
 import envConfig from '../config/env';
@@ -15,8 +13,6 @@ import { AuthEntity } from './auth/entities/auth.entity';
 import { PluginUserEntity } from './auth/entities/plugin-user.entity';
 import { PluginCursorRulesEntity } from './auth/entities/plugin-cursor-rules.entity';
 import { PluginCursorMcpsEntity } from './auth/entities/plugin-cursor-mcps.entity';
-import { APP_GUARD } from '@nestjs/core';
-import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RedisService } from './redis/redis.service';
 import { RedisModule } from './redis/redis.module';
 import { UploadModule } from './upload/upload.module';
@@ -47,7 +43,6 @@ import { TimerModule } from './timer/timer.module';
       signOptions: { expiresIn: '7d' },
     }),
     AuthModule,
-    UserModule,
     CursorModule,
     PostsModule,
     RedisModule,
@@ -55,16 +50,6 @@ import { TimerModule } from './timer/timer.module';
     TimerModule,
   ],
   controllers: [AppController],
-  // 注册为全局守卫
-  providers: [
-    AppService,
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: JwtAuthGuard,
-    // },
-    RedisService,
-    LoggerService,
-    TimerService,
-  ],
+  providers: [AppService, RedisService, LoggerService, TimerService],
 })
 export class AppModule {}

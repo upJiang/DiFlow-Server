@@ -7,7 +7,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { UserEntity } from '../../user/entities/user.entity';
+import { PluginUserEntity } from '../../../auth/entities/plugin-user.entity';
 
 /**
  * Cursor MCP 配置实体
@@ -45,7 +45,7 @@ export class CursorMcpEntity {
   @UpdateDateColumn({ comment: '更新时间' })
   updatedAt: Date;
 
-  @ManyToOne(() => UserEntity, (user) => user.cursorMcps)
+  @ManyToOne(() => PluginUserEntity, (user) => user.cursorMcps)
   @JoinColumn({ name: 'userId' })
-  user: UserEntity;
+  user: PluginUserEntity;
 }

@@ -44,8 +44,8 @@ export class PluginService {
       await this.pluginUserRepository.save(user);
     }
 
-    // 生成JWT token
-    const payload = { email: user.email, sub: user.id };
+    // 生成JWT token - 只使用email作为唯一标识符
+    const payload = { email: user.email };
     const token = this.jwtService.sign(payload);
 
     return {
@@ -192,5 +192,29 @@ export class PluginService {
       return await this.pluginCursorMcpsRepository.save(server);
     }
     return null;
+  }
+
+  /**
+   * 根据用户ID获取用户信息
+   * 用于JWT策略验证
+   */
+  async getUserById(id: number) {
+    const user = await this.pluginUserRepository.findOne({
+      where: { id, isActive: true },
+    });
+    if (!user) {
+      throw new UnauthorizedException('用户不存在或已被禁用');
+    }
+    return user;
+  }
+
+  /**
+   * 根据邮箱查找用户
+   * 用于Auth0 token验证
+   */
+  async findUserByEmail(email: string) {
+    return await this.pluginUserRepository.findOne({
+      where: { email, isActive: true },
+    });
   }
 }

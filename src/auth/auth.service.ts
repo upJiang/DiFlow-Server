@@ -1,16 +1,19 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
+import { CreateAuthDto, EmailAuthDto } from './dto/create-auth.dto';
 import { AuthEntity } from './entities/auth.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcryptjs from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { RedisService } from '../redis/redis.service';
+import { PluginUserEntity } from './entities/plugin-user.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(AuthEntity) private readonly auth: Repository<AuthEntity>,
+    @InjectRepository(PluginUserEntity)
+    private readonly pluginUserRepository: Repository<PluginUserEntity>,
     private readonly JwtService: JwtService,
     private readonly redisService: RedisService, // 注册redis控制器
   ) {}
@@ -50,6 +53,48 @@ export class AuthService {
     return {
       access_token: this.JwtService.sign(payload),
       msg: '登录成功',
+    };
+  }
+
+  /**
+   * 基于邮箱的登录或创建用户
+   */
+  async emailLogin(
+    emailAuthDto: EmailAuthDto,
+  ): Promise<{ access_token: string }> {
+    const { email, username, cursorUserId, avatar } = emailAuthDto;
+
+    // 查找或创建用户
+    let user = await this.pluginUserRepository.findOne({ where: { email } });
+
+    if (!user) {
+      // 用户不存在，创建新用户
+      user = this.pluginUserRepository.create({
+        email,
+        username: username || email.split('@')[0], // 如果没有提供用户名，使用邮箱前缀
+        cursorUserId,
+        avatar,
+        isActive: true,
+      });
+      await this.pluginUserRepository.save(user);
+    } else {
+      // 用户存在，更新信息（如果提供了新信息）
+      if (username && username !== user.username) {
+        user.username = username;
+      }
+      if (cursorUserId && cursorUserId !== user.cursorUserId) {
+        user.cursorUserId = cursorUserId;
+      }
+      if (avatar && avatar !== user.avatar) {
+        user.avatar = avatar;
+      }
+      await this.pluginUserRepository.save(user);
+    }
+
+    // 生成JWT token
+    const payload = { email: user.email, sub: user.id };
+    return {
+      access_token: this.JwtService.sign(payload),
     };
   }
 }
