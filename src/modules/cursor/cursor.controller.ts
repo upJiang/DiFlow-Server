@@ -179,9 +179,21 @@ export class CursorController {
     console.log('🔍 同步规则 - 用户邮箱:', req.user.email);
     console.log('🔍 接收到的规则数据:', body);
 
+    // 转换前端数据格式为后端期望的格式
+    const rulesData = body.rules.map((rule) => ({
+      name: rule.name,
+      content: rule.content,
+      description: rule.description || '',
+      type: rule.type || '',
+      order: rule.order || 0,
+      enabled: rule.enabled !== false, // 默认启用
+    }));
+
+    console.log('🔍 转换后的规则数据:', rulesData);
+
     const syncedRules = await this.cursorService.syncRules(
       req.user.email,
-      body.rules,
+      rulesData,
     );
 
     return {

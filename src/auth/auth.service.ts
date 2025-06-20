@@ -1,63 +1,21 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { CreateAuthDto, EmailAuthDto } from './dto/create-auth.dto';
-import { AuthEntity } from './entities/auth.entity';
+import { Injectable } from '@nestjs/common';
+import { EmailAuthDto } from './dto/email-auth.dto';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import * as bcryptjs from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
-import { RedisService } from '../redis/redis.service';
 import { PluginUserEntity } from './entities/plugin-user.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(AuthEntity) private readonly auth: Repository<AuthEntity>,
     @InjectRepository(PluginUserEntity)
     private readonly pluginUserRepository: Repository<PluginUserEntity>,
     private readonly JwtService: JwtService,
-    private readonly redisService: RedisService, // 注册redis控制器
   ) {}
 
-  // 注册
-  async signup(signupData: CreateAuthDto) {
-    const findUser = await this.auth.findOne({
-      where: { username: signupData.username },
-    });
-    if (findUser && findUser.username === signupData.username)
-      return '用户已存在';
-    // 对密码进行加密处理
-    signupData.password = bcryptjs.hashSync(signupData.password, 10);
-    await this.auth.save(signupData);
-    // 尝试将注册成功的用户存入redis中
-    this.redisService.set(signupData.username, signupData.password);
-    return '注册成功';
-  }
-
-  // 登录
-  async login(loginData: CreateAuthDto) {
-    const findUser = await this.auth.findOne({
-      where: { username: loginData.username },
-    });
-    // 没有找到
-    if (!findUser) return new BadRequestException('用户不存在');
-
-    // 找到了对比密码
-    const compareRes: boolean = bcryptjs.compareSync(
-      loginData.password,
-      findUser.password,
-    );
-    // 密码不正确
-    if (!compareRes) return new BadRequestException('密码不正确');
-    const payload = { username: findUser.username };
-
-    return {
-      access_token: this.JwtService.sign(payload),
-      msg: '登录成功',
-    };
-  }
-
   /**
-   * 基于邮箱的登录或创建用户
+   * 基于邮箱的登录或创建用户 - 唯一的认证方式
+   * 邮箱是唯一标识，不需要密码验证
    */
   async emailLogin(
     emailAuthDto: EmailAuthDto,
@@ -91,7 +49,7 @@ export class AuthService {
       await this.pluginUserRepository.save(user);
     }
 
-    // 生成JWT token
+    // 生成JWT token，只使用email作为唯一标识
     const payload = { email: user.email, sub: user.id };
     return {
       access_token: this.JwtService.sign(payload),

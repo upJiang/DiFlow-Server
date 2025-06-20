@@ -147,7 +147,8 @@ export class CursorService {
         userEmail,
         serverName: mcp.name,
         command: mcp.command,
-        args: mcp.args ? JSON.parse(mcp.args) : [],
+        args:
+          typeof mcp.args === 'string' ? JSON.parse(mcp.args) : mcp.args || [],
         env: mcp.env || {},
         isEnabled: mcp.enabled ?? true,
         sortOrder: 0,
