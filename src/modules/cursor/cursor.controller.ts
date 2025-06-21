@@ -17,7 +17,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { CursorService } from './cursor.service';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CreateRuleDto, UpdateRuleDto } from './dto/rule.dto';
 import { CreateMcpDto, UpdateMcpDto } from './dto/mcp.dto';
 
@@ -104,14 +104,14 @@ export class CursorController {
     // 转换数据格式以匹配前端期望
     const formattedMcps = mcps.map((mcp) => ({
       id: mcp.id,
-      serverName: mcp.serverName,
+      serverName: mcp.name, // 使用name字段
       command: mcp.command,
-      args: mcp.args || [],
-      env: mcp.env || {},
-      sortOrder: mcp.sortOrder || 0,
-      isEnabled: mcp.isEnabled,
+      args: mcp.args ? JSON.parse(mcp.args) : [], // 解析JSON字符串
+      env: {}, // 实体中没有env字段，返回空对象
+      sortOrder: 0, // 实体中没有sortOrder字段，返回默认值
+      isEnabled: mcp.enabled, // 使用enabled字段
       createdAt: mcp.createdAt,
-      updatedAt: mcp.updatedAt,
+      updatedAt: mcp.createdAt, // 实体中没有updatedAt，使用createdAt
     }));
 
     console.log('🔍 格式化后的MCP数据:', formattedMcps);
@@ -175,83 +175,127 @@ export class CursorController {
   @Post('sync/rules')
   @ApiOperation({ summary: '批量同步规则' })
   @ApiResponse({ status: 200, description: '成功同步规则' })
-  async syncRules(@Request() req, @Body() body: { rules: any[] }) {
-    console.log('🔍 同步规则 - 用户邮箱:', req.user.email);
-    console.log('🔍 接收到的规则数据:', body);
+  async syncRules(@Request() req, @Body() body: { rules: CreateRuleDto[] }) {
+    try {
+      console.log('🔍 同步规则 - 用户邮箱:', req.user.email);
+      console.log('🔍 接收到的规则数据:', body);
 
-    // 转换前端数据格式为后端期望的格式
-    const rulesData = body.rules.map((rule) => ({
-      name: rule.name,
-      content: rule.content,
-      description: rule.description || '',
-      type: rule.type || '',
-      order: rule.order || 0,
-      enabled: rule.enabled !== false, // 默认启用
-    }));
+      // 验证请求体格式
+      if (!body || !Array.isArray(body.rules)) {
+        return {
+          code: 400,
+          message: '请求格式错误：rules 必须是数组',
+          data: null,
+        };
+      }
 
-    console.log('🔍 转换后的规则数据:', rulesData);
+      // 转换前端数据格式为后端期望的格式
+      const rulesData = body.rules.map((rule) => ({
+        name: rule.name,
+        content: rule.content,
+        description: rule.description || '',
+        type: rule.type || '',
+        order: rule.order || 0,
+        enabled: rule.enabled !== false, // 默认启用
+      }));
 
-    const syncedRules = await this.cursorService.syncRules(
-      req.user.email,
-      rulesData,
-    );
+      console.log('🔍 转换后的规则数据:', rulesData);
 
-    return {
-      code: 200,
-      message: '同步规则成功',
-      data: {
-        success: true,
+      const syncedRules = await this.cursorService.syncRules(
+        req.user.email,
+        rulesData,
+      );
+
+      return {
+        code: 200,
         message: '同步规则成功',
-        rules: syncedRules,
-      },
-    };
+        data: {
+          success: true,
+          message: '同步规则成功',
+          rules: syncedRules,
+        },
+      };
+    } catch (error) {
+      console.error('🔍 同步规则失败:', error);
+      return {
+        code: 500,
+        message: '同步规则失败',
+        data: {
+          success: false,
+          message: error.message || '同步规则失败',
+          error: error,
+        },
+      };
+    }
   }
 
   @Post('sync/mcps')
   @ApiOperation({ summary: '批量同步 MCP 配置' })
   @ApiResponse({ status: 200, description: '成功同步 MCP 配置' })
-  async syncMcps(@Request() req, @Body() body: { mcps: any[] }) {
-    console.log('🔍 同步MCP配置 - 用户邮箱:', req.user.email);
-    console.log('🔍 接收到的MCP数据:', body);
+  async syncMcps(@Request() req, @Body() body: { mcps: CreateMcpDto[] }) {
+    try {
+      console.log('🔍 同步MCP配置 - 用户邮箱:', req.user.email);
+      console.log('🔍 接收到的MCP数据:', body);
 
-    // 转换前端数据格式为后端期望的格式
-    const mcpsData = body.mcps.map((mcp) => ({
-      name: mcp.serverName, // 字段名映射
-      command: mcp.command,
-      args: JSON.stringify(mcp.args || []), // 数组转字符串
-      env: mcp.env || {},
-      description: mcp.description || '',
-      enabled: mcp.isEnabled !== false, // 默认启用
-    }));
+      // 验证请求体格式
+      if (!body || !Array.isArray(body.mcps)) {
+        return {
+          code: 400,
+          message: '请求格式错误：mcps 必须是数组',
+          data: null,
+        };
+      }
 
-    console.log('🔍 转换后的MCP数据:', mcpsData);
+      // 转换前端数据格式为后端期望的格式
+      const mcpsData = body.mcps.map((mcp) => ({
+        name: mcp.name,
+        command: mcp.command,
+        args: mcp.args || [], // 保持数组格式
+        env: mcp.env || {},
+        description: mcp.description || '',
+        enabled: mcp.enabled !== false,
+      }));
 
-    const syncedMcps = await this.cursorService.syncMcps(
-      req.user.email,
-      mcpsData,
-    );
+      console.log('🔍 转换后的MCP数据:', mcpsData);
 
-    // 转换返回数据格式
-    const formattedMcps = syncedMcps.map((mcp) => ({
-      id: mcp.id,
-      serverName: mcp.serverName,
-      command: mcp.command,
-      args: mcp.args || [],
-      env: mcp.env || {},
-      sortOrder: mcp.sortOrder || 0,
-      isEnabled: mcp.isEnabled,
-      createdAt: mcp.createdAt,
-      updatedAt: mcp.updatedAt,
-    }));
+      const syncedMcps = await this.cursorService.syncMcps(
+        req.user.email,
+        mcpsData,
+      );
 
-    return {
-      code: 200,
-      message: '同步 MCP 配置成功',
-      data: {
-        success: true,
+      // 转换返回数据格式
+      const formattedMcps = syncedMcps.map((mcp) => ({
+        id: mcp.id,
+        serverName: mcp.name, // 使用name字段
+        command: mcp.command,
+        args: mcp.args ? JSON.parse(mcp.args) : [], // 解析JSON字符串
+        env: {}, // 实体中没有env字段，返回空对象
+        sortOrder: 0, // 实体中没有sortOrder字段，返回默认值
+        isEnabled: mcp.enabled, // 使用enabled字段
+        createdAt: mcp.createdAt,
+        updatedAt: mcp.createdAt, // 实体中没有updatedAt，使用createdAt
+      }));
+
+      return {
+        code: 200,
         message: '同步 MCP 配置成功',
-        mcps: formattedMcps,
-      },
-    };
+        data: {
+          success: true,
+          message: '同步 MCP 配置成功',
+          mcps: formattedMcps,
+        },
+      };
+    } catch (error) {
+      console.error('🔍 同步MCP配置失败:', error);
+      return {
+        code: 500,
+        message: '同步MCP配置失败',
+        data: {
+          success: false,
+          message: error.message || '同步MCP配置失败',
+          error: error,
+        },
+      };
+    }
   }
 }

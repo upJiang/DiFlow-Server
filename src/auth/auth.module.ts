@@ -4,18 +4,26 @@ import { AuthController } from './auth.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PluginUserEntity } from './entities/plugin-user.entity';
 import { JwtModule } from '@nestjs/jwt';
-import JwtAuthStrategy from './jwt-auth.strategy';
+import { PassportModule } from '@nestjs/passport';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtStrategy } from './jwt.strategy';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([PluginUserEntity]),
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'diflow-cursor-secret',
-      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '7d' },
+    PassportModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '7d' },
+      }),
+      inject: [ConfigService],
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAuthStrategy],
-  exports: [AuthService],
+  providers: [AuthService, JwtStrategy, JwtAuthGuard],
+  exports: [JwtAuthGuard],
 })
 export class AuthModule {}

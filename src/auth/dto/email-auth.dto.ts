@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsEmail, IsNotEmpty } from 'class-validator';
 
 /**
  * 邮箱认证DTO - 唯一的认证方式
@@ -9,16 +9,4 @@ export class EmailAuthDto {
   @IsEmail({}, { message: '邮箱格式不正确' })
   @IsNotEmpty({ message: '邮箱必填' })
   email: string;
-
-  @ApiProperty({ description: '用户名', required: false })
-  @IsOptional()
-  username?: string;
-
-  @ApiProperty({ description: 'Cursor用户ID', required: false })
-  @IsOptional()
-  cursorUserId?: string;
-
-  @ApiProperty({ description: '头像URL', required: false })
-  @IsOptional()
-  avatar?: string;
 }

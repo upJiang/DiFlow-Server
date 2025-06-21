@@ -1,46 +1,97 @@
-import { ApiProperty, PartialType } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import {
   IsString,
   IsNotEmpty,
   IsOptional,
-  IsObject,
   IsBoolean,
   IsArray,
+  IsObject,
 } from 'class-validator';
 
+/**
+ * 创建MCP配置DTO
+ */
 export class CreateMcpDto {
-  @ApiProperty({ description: 'MCP 服务器名称' })
-  @IsString()
-  @IsNotEmpty()
+  @ApiProperty({ description: 'MCP服务器名称' })
+  @IsString({ message: 'MCP服务器名称必须是字符串' })
+  @IsNotEmpty({ message: 'MCP服务器名称不能为空' })
   name: string;
 
-  @ApiProperty({ description: 'MCP 服务器命令' })
-  @IsString()
-  @IsNotEmpty()
+  @ApiProperty({ description: 'MCP服务器命令' })
+  @IsString({ message: 'MCP服务器命令必须是字符串' })
+  @IsNotEmpty({ message: 'MCP服务器命令不能为空' })
   command: string;
 
   @ApiProperty({
-    description: 'MCP 服务器参数（JSON 字符串）',
+    description: 'MCP服务器参数',
     required: false,
+    type: [String],
   })
-  @IsString()
   @IsOptional()
-  args?: string;
+  @IsArray({ message: 'MCP服务器参数必须是数组' })
+  args?: string[];
 
-  @ApiProperty({ description: 'MCP 服务器环境变量', required: false })
-  @IsObject()
+  @ApiProperty({
+    description: 'MCP服务器环境变量',
+    required: false,
+    type: Object,
+  })
   @IsOptional()
+  @IsObject({ message: 'MCP服务器环境变量必须是对象' })
   env?: Record<string, string>;
 
-  @ApiProperty({ description: 'MCP 服务器描述', required: false })
-  @IsString()
+  @ApiProperty({ description: 'MCP服务器描述', required: false })
   @IsOptional()
+  @IsString({ message: 'MCP服务器描述必须是字符串' })
   description?: string;
 
   @ApiProperty({ description: '是否启用', required: false, default: true })
-  @IsBoolean()
   @IsOptional()
+  @IsBoolean({ message: '启用状态必须是布尔值' })
   enabled?: boolean;
 }
 
-export class UpdateMcpDto extends PartialType(CreateMcpDto) {}
+/**
+ * 更新MCP配置DTO
+ */
+export class UpdateMcpDto {
+  @ApiProperty({ description: 'MCP服务器名称', required: false })
+  @IsOptional()
+  @IsString({ message: 'MCP服务器名称必须是字符串' })
+  @IsNotEmpty({ message: 'MCP服务器名称不能为空' })
+  name?: string;
+
+  @ApiProperty({ description: 'MCP服务器命令', required: false })
+  @IsOptional()
+  @IsString({ message: 'MCP服务器命令必须是字符串' })
+  @IsNotEmpty({ message: 'MCP服务器命令不能为空' })
+  command?: string;
+
+  @ApiProperty({
+    description: 'MCP服务器参数',
+    required: false,
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray({ message: 'MCP服务器参数必须是数组' })
+  args?: string[];
+
+  @ApiProperty({
+    description: 'MCP服务器环境变量',
+    required: false,
+    type: Object,
+  })
+  @IsOptional()
+  @IsObject({ message: 'MCP服务器环境变量必须是对象' })
+  env?: Record<string, string>;
+
+  @ApiProperty({ description: 'MCP服务器描述', required: false })
+  @IsOptional()
+  @IsString({ message: 'MCP服务器描述必须是字符串' })
+  description?: string;
+
+  @ApiProperty({ description: '是否启用', required: false })
+  @IsOptional()
+  @IsBoolean({ message: '启用状态必须是布尔值' })
+  enabled?: boolean;
+}

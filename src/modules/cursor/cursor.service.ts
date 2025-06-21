@@ -1,24 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { PluginCursorRulesEntity } from '../../auth/entities/plugin-cursor-rules.entity';
-import { PluginCursorMcpsEntity } from '../../auth/entities/plugin-cursor-mcps.entity';
+import { CursorRuleEntity } from './entities/cursor-rule.entity';
+import { CursorMcpEntity } from './entities/cursor-mcp.entity';
 import { CreateRuleDto, UpdateRuleDto } from './dto/rule.dto';
 import { CreateMcpDto, UpdateMcpDto } from './dto/mcp.dto';
 
 @Injectable()
 export class CursorService {
   constructor(
-    @InjectRepository(PluginCursorRulesEntity)
-    private readonly ruleRepository: Repository<PluginCursorRulesEntity>,
-    @InjectRepository(PluginCursorMcpsEntity)
-    private readonly mcpRepository: Repository<PluginCursorMcpsEntity>,
+    @InjectRepository(CursorRuleEntity)
+    private readonly ruleRepository: Repository<CursorRuleEntity>,
+    @InjectRepository(CursorMcpEntity)
+    private readonly mcpRepository: Repository<CursorMcpEntity>,
   ) {}
 
   // 规则管理
-  async getRulesByUserEmail(
-    userEmail: string,
-  ): Promise<PluginCursorRulesEntity[]> {
+  async getRulesByUserEmail(userEmail: string): Promise<CursorRuleEntity[]> {
     return this.ruleRepository.find({
       where: { userEmail },
       order: { createdAt: 'DESC' },
@@ -28,13 +26,13 @@ export class CursorService {
   async createRule(
     userEmail: string,
     createRuleDto: CreateRuleDto,
-  ): Promise<PluginCursorRulesEntity> {
+  ): Promise<CursorRuleEntity> {
     const rule = this.ruleRepository.create({
       userEmail,
-      ruleName: createRuleDto.name,
-      ruleContent: createRuleDto.content,
-      isEnabled: createRuleDto.enabled ?? true,
-      sortOrder: createRuleDto.order ?? 0,
+      name: createRuleDto.name,
+      content: createRuleDto.content,
+      enabled: createRuleDto.enabled ?? true,
+      order: createRuleDto.order ?? 0,
     });
     return this.ruleRepository.save(rule);
   }
@@ -43,16 +41,15 @@ export class CursorService {
     id: number,
     userEmail: string,
     updateRuleDto: UpdateRuleDto,
-  ): Promise<PluginCursorRulesEntity> {
-    const updateData: Partial<PluginCursorRulesEntity> = {};
-    if (updateRuleDto.name !== undefined)
-      updateData.ruleName = updateRuleDto.name;
+  ): Promise<CursorRuleEntity> {
+    const updateData: Partial<CursorRuleEntity> = {};
+    if (updateRuleDto.name !== undefined) updateData.name = updateRuleDto.name;
     if (updateRuleDto.content !== undefined)
-      updateData.ruleContent = updateRuleDto.content;
+      updateData.content = updateRuleDto.content;
     if (updateRuleDto.enabled !== undefined)
-      updateData.isEnabled = updateRuleDto.enabled;
+      updateData.enabled = updateRuleDto.enabled;
     if (updateRuleDto.order !== undefined)
-      updateData.sortOrder = updateRuleDto.order;
+      updateData.order = updateRuleDto.order;
 
     await this.ruleRepository.update({ id, userEmail }, updateData);
     return this.ruleRepository.findOne({ where: { id, userEmail } });
@@ -63,9 +60,7 @@ export class CursorService {
   }
 
   // MCP 管理
-  async getMcpsByUserEmail(
-    userEmail: string,
-  ): Promise<PluginCursorMcpsEntity[]> {
+  async getMcpsByUserEmail(userEmail: string): Promise<CursorMcpEntity[]> {
     return this.mcpRepository.find({
       where: { userEmail },
       order: { createdAt: 'DESC' },
@@ -75,15 +70,14 @@ export class CursorService {
   async createMcp(
     userEmail: string,
     createMcpDto: CreateMcpDto,
-  ): Promise<PluginCursorMcpsEntity> {
+  ): Promise<CursorMcpEntity> {
     const mcp = this.mcpRepository.create({
       userEmail,
-      serverName: createMcpDto.name,
+      name: createMcpDto.name,
       command: createMcpDto.command,
-      args: createMcpDto.args ? JSON.parse(createMcpDto.args) : [],
-      env: createMcpDto.env || {},
-      isEnabled: createMcpDto.enabled ?? true,
-      sortOrder: 0,
+      args: JSON.stringify(createMcpDto.args || []),
+      description: createMcpDto.description,
+      enabled: createMcpDto.enabled ?? true,
     });
     return this.mcpRepository.save(mcp);
   }
@@ -92,17 +86,17 @@ export class CursorService {
     id: number,
     userEmail: string,
     updateMcpDto: UpdateMcpDto,
-  ): Promise<PluginCursorMcpsEntity> {
-    const updateData: Partial<PluginCursorMcpsEntity> = {};
-    if (updateMcpDto.name !== undefined)
-      updateData.serverName = updateMcpDto.name;
+  ): Promise<CursorMcpEntity> {
+    const updateData: Partial<CursorMcpEntity> = {};
+    if (updateMcpDto.name !== undefined) updateData.name = updateMcpDto.name;
     if (updateMcpDto.command !== undefined)
       updateData.command = updateMcpDto.command;
     if (updateMcpDto.args !== undefined)
-      updateData.args = JSON.parse(updateMcpDto.args);
-    if (updateMcpDto.env !== undefined) updateData.env = updateMcpDto.env;
+      updateData.args = JSON.stringify(updateMcpDto.args);
+    if (updateMcpDto.description !== undefined)
+      updateData.description = updateMcpDto.description;
     if (updateMcpDto.enabled !== undefined)
-      updateData.isEnabled = updateMcpDto.enabled;
+      updateData.enabled = updateMcpDto.enabled;
 
     await this.mcpRepository.update({ id, userEmail }, updateData);
     return this.mcpRepository.findOne({ where: { id, userEmail } });
@@ -116,45 +110,84 @@ export class CursorService {
   async syncRules(
     userEmail: string,
     rules: CreateRuleDto[],
-  ): Promise<PluginCursorRulesEntity[]> {
-    // 删除用户所有规则
-    await this.ruleRepository.delete({ userEmail });
+  ): Promise<CursorRuleEntity[]> {
+    try {
+      console.log('🔍 开始同步规则 - 用户邮箱:', userEmail);
+      console.log('🔍 规则数据:', rules);
 
-    // 批量创建新规则
-    const ruleEntities = rules.map((rule) =>
-      this.ruleRepository.create({
-        userEmail,
-        ruleName: rule.name,
-        ruleContent: rule.content,
-        isEnabled: rule.enabled ?? true,
-        sortOrder: rule.order ?? 0,
-      }),
-    );
+      // 删除用户所有规则
+      console.log('🔍 删除用户现有规则...');
+      await this.ruleRepository.delete({ userEmail });
 
-    return this.ruleRepository.save(ruleEntities);
+      // 如果没有新规则，直接返回空数组
+      if (!rules || rules.length === 0) {
+        console.log('🔍 无新规则，返回空数组');
+        return [];
+      }
+
+      // 批量创建新规则
+      console.log('🔍 创建新规则...');
+      const ruleEntities = rules.map((rule) => {
+        console.log('🔍 处理规则:', rule);
+        return this.ruleRepository.create({
+          userEmail,
+          name: rule.name,
+          ruleName: rule.name, // 兼容字段
+          content: rule.content,
+          ruleContent: rule.content, // 兼容字段
+          enabled: rule.enabled ?? true,
+          order: rule.order ?? 0,
+        });
+      });
+
+      console.log('🔍 准备保存规则实体:', ruleEntities);
+      const savedRules = await this.ruleRepository.save(ruleEntities);
+      console.log('🔍 规则保存成功:', savedRules);
+
+      return savedRules;
+    } catch (error) {
+      console.error('🔍 同步规则失败:', error);
+      throw error;
+    }
   }
 
   async syncMcps(
     userEmail: string,
     mcps: CreateMcpDto[],
-  ): Promise<PluginCursorMcpsEntity[]> {
-    // 删除用户所有 MCP 配置
-    await this.mcpRepository.delete({ userEmail });
+  ): Promise<CursorMcpEntity[]> {
+    try {
+      console.log('🔍 开始同步MCP - 用户邮箱:', userEmail);
+      console.log('🔍 MCP数据:', mcps);
 
-    // 批量创建新 MCP 配置
-    const mcpEntities = mcps.map((mcp) =>
-      this.mcpRepository.create({
-        userEmail,
-        serverName: mcp.name,
-        command: mcp.command,
-        args:
-          typeof mcp.args === 'string' ? JSON.parse(mcp.args) : mcp.args || [],
-        env: mcp.env || {},
-        isEnabled: mcp.enabled ?? true,
-        sortOrder: 0,
-      }),
-    );
+      // 删除用户所有 MCP 配置
+      await this.mcpRepository.delete({ userEmail });
 
-    return this.mcpRepository.save(mcpEntities);
+      // 如果没有新MCP配置，直接返回空数组
+      if (!mcps || mcps.length === 0) {
+        console.log('🔍 无新MCP配置，返回空数组');
+        return [];
+      }
+
+      // 批量创建新 MCP 配置
+      const mcpEntities = mcps.map((mcp) =>
+        this.mcpRepository.create({
+          userEmail,
+          name: mcp.name,
+          serverName: mcp.name, // 兼容字段
+          command: mcp.command,
+          args: JSON.stringify(mcp.args || []),
+          description: mcp.description,
+          enabled: mcp.enabled ?? true,
+        }),
+      );
+
+      const savedMcps = await this.mcpRepository.save(mcpEntities);
+      console.log('🔍 MCP保存成功:', savedMcps);
+
+      return savedMcps;
+    } catch (error) {
+      console.error('🔍 同步MCP失败:', error);
+      throw error;
+    }
   }
 }

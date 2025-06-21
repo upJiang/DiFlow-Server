@@ -10,7 +10,7 @@ export class AuthService {
   constructor(
     @InjectRepository(PluginUserEntity)
     private readonly pluginUserRepository: Repository<PluginUserEntity>,
-    private readonly JwtService: JwtService,
+    private readonly jwtService: JwtService,
   ) {}
 
   /**
@@ -20,7 +20,7 @@ export class AuthService {
   async emailLogin(
     emailAuthDto: EmailAuthDto,
   ): Promise<{ access_token: string }> {
-    const { email, username, cursorUserId, avatar } = emailAuthDto;
+    const { email } = emailAuthDto;
 
     // 查找或创建用户
     let user = await this.pluginUserRepository.findOne({ where: { email } });
@@ -29,30 +29,14 @@ export class AuthService {
       // 用户不存在，创建新用户
       user = this.pluginUserRepository.create({
         email,
-        username: username || email.split('@')[0], // 如果没有提供用户名，使用邮箱前缀
-        cursorUserId,
-        avatar,
-        isActive: true,
       });
-      await this.pluginUserRepository.save(user);
-    } else {
-      // 用户存在，更新信息（如果提供了新信息）
-      if (username && username !== user.username) {
-        user.username = username;
-      }
-      if (cursorUserId && cursorUserId !== user.cursorUserId) {
-        user.cursorUserId = cursorUserId;
-      }
-      if (avatar && avatar !== user.avatar) {
-        user.avatar = avatar;
-      }
       await this.pluginUserRepository.save(user);
     }
 
     // 生成JWT token，只使用email作为唯一标识
     const payload = { email: user.email, sub: user.id };
     return {
-      access_token: this.JwtService.sign(payload),
+      access_token: this.jwtService.sign(payload),
     };
   }
 }

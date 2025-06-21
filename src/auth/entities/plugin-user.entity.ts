@@ -3,7 +3,6 @@ import {
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
-  UpdateDateColumn,
   OneToMany,
 } from 'typeorm';
 
@@ -15,23 +14,8 @@ export class PluginUserEntity {
   @Column({ unique: true, comment: '用户邮箱，作为唯一标识' })
   email: string;
 
-  @Column({ nullable: true, comment: '用户名' })
-  username: string;
-
-  @Column({ nullable: true, comment: 'Cursor用户ID' })
-  cursorUserId: string;
-
-  @Column({ type: 'text', nullable: true, comment: '用户头像' })
-  avatar: string;
-
-  @Column({ default: true, comment: '是否激活' })
-  isActive: boolean;
-
   @CreateDateColumn({ comment: '创建时间' })
   createdAt: Date;
-
-  @UpdateDateColumn({ comment: '更新时间' })
-  updatedAt: Date;
 
   // 关系字段 - 延迟导入以避免循环依赖
   @OneToMany('CursorRuleEntity', 'user')
