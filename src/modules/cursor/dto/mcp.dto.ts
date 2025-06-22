@@ -95,3 +95,43 @@ export class UpdateMcpDto {
   @IsBoolean({ message: '启用状态必须是布尔值' })
   enabled?: boolean;
 }
+
+/**
+ * MCP配置分享DTO
+ */
+export class ShareMcpConfigDto {
+  @ApiProperty({ description: '分享标题' })
+  @IsString({ message: '分享标题必须是字符串' })
+  @IsNotEmpty({ message: '分享标题不能为空' })
+  title: string;
+
+  @ApiProperty({ description: '分享描述', required: false })
+  @IsOptional()
+  @IsString({ message: '分享描述必须是字符串' })
+  description?: string;
+
+  @ApiProperty({ description: 'MCP配置JSON', type: Object, required: false })
+  @IsOptional()
+  @IsObject({ message: 'MCP配置必须是对象' })
+  mcpConfig?: Record<string, any>;
+}
+
+/**
+ * 通过分享ID添加MCP配置DTO
+ */
+export class AddMcpByShareIdDto {
+  @ApiProperty({ description: '分享ID' })
+  @IsString({ message: '分享ID必须是字符串' })
+  @IsNotEmpty({ message: '分享ID不能为空' })
+  shareId: string;
+}
+
+/**
+ * 批量更新MCP配置DTO
+ */
+export class BatchUpdateMcpDto {
+  @ApiProperty({ description: 'MCP配置JSON', type: Object })
+  @IsObject({ message: 'MCP配置必须是对象' })
+  @IsNotEmpty({ message: 'MCP配置不能为空' })
+  mcpConfig: Record<string, any>;
+}

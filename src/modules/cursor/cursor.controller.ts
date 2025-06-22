@@ -19,7 +19,13 @@ import {
 import { CursorService } from './cursor.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CreateRuleDto, UpdateRuleDto } from './dto/rule.dto';
-import { CreateMcpDto, UpdateMcpDto } from './dto/mcp.dto';
+import {
+  CreateMcpDto,
+  UpdateMcpDto,
+  ShareMcpConfigDto,
+  AddMcpByShareIdDto,
+  BatchUpdateMcpDto,
+} from './dto/mcp.dto';
 
 @Controller('cursor')
 @ApiTags('Cursor')
@@ -168,6 +174,181 @@ export class CursorController {
     return {
       code: 200,
       message: '删除 MCP 配置成功',
+    };
+  }
+
+  // 新增：获取MCP配置的JSON格式
+  @Get('mcps/json')
+  @ApiOperation({ summary: '获取用户 MCP 配置 (JSON格式)' })
+  @ApiResponse({ status: 200, description: '成功获取 MCP 配置 JSON' })
+  async getMcpConfigJson(@Request() req) {
+    console.log('🔍 获取MCP配置JSON - 用户邮箱:', req.user.email);
+    const mcpConfig = await this.cursorService.getMcpConfigAsJson(
+      req.user.email,
+    );
+
+    return {
+      code: 200,
+      message: '获取 MCP 配置 JSON 成功',
+      data: {
+        mcpConfig,
+      },
+    };
+  }
+
+  // 新增：批量更新MCP配置（直接编辑JSON）
+  @Put('mcps/batch')
+  @ApiOperation({ summary: '批量更新 MCP 配置 (JSON编辑)' })
+  @ApiResponse({ status: 200, description: '成功批量更新 MCP 配置' })
+  async batchUpdateMcpConfig(
+    @Request() req,
+    @Body() batchUpdateDto: BatchUpdateMcpDto,
+  ) {
+    console.log('🔍 批量更新MCP配置 - 用户邮箱:', req.user.email);
+    const mcps = await this.cursorService.batchUpdateMcpConfig(
+      req.user.email,
+      batchUpdateDto,
+    );
+
+    return {
+      code: 200,
+      message: '批量更新 MCP 配置成功',
+      data: {
+        mcps,
+        count: mcps.length,
+      },
+    };
+  }
+
+  // 新增：分享MCP配置
+  @Post('mcps/share')
+  @ApiOperation({ summary: '分享 MCP 配置' })
+  @ApiResponse({ status: 201, description: '成功创建分享' })
+  async shareMcpConfig(@Request() req, @Body() shareDto: ShareMcpConfigDto) {
+    try {
+      console.log('🔍 分享MCP配置 - 用户邮箱:', req.user.email);
+      console.log('🔍 请求体:', shareDto);
+
+      const share = await this.cursorService.shareMcpConfig(
+        req.user.email,
+        shareDto,
+      );
+
+      return {
+        code: 201,
+        message: '分享 MCP 配置成功',
+        data: {
+          shareId: share.shareId,
+          title: share.title,
+          description: share.description,
+          createdAt: share.createdAt,
+        },
+      };
+    } catch (error) {
+      console.error('🔍 分享MCP配置失败:', error);
+      return {
+        code: 500,
+        message: error.message || '分享配置失败',
+        data: null,
+      };
+    }
+  }
+
+  // 新增：通过分享ID获取MCP配置
+  @Get('mcps/share/:shareId')
+  @ApiOperation({ summary: '通过分享ID获取 MCP 配置' })
+  @ApiResponse({ status: 200, description: '成功获取分享的 MCP 配置' })
+  async getMcpConfigByShareId(@Param('shareId') shareId: string) {
+    try {
+      console.log('🔍 通过分享ID获取MCP配置:', shareId);
+      const share = await this.cursorService.getMcpConfigByShareId(shareId);
+
+      return {
+        code: 200,
+        message: '获取分享配置成功',
+        data: {
+          shareId: share.shareId,
+          title: share.title,
+          description: share.description,
+          mcpConfig: JSON.parse(share.mcpConfig),
+          creatorEmail: share.creatorEmail,
+          usageCount: share.usageCount,
+          createdAt: share.createdAt,
+        },
+      };
+    } catch (error) {
+      console.error('🔍 获取分享配置失败:', error);
+      return {
+        code: 500,
+        message: error.message || '获取分享配置失败',
+        data: null,
+      };
+    }
+  }
+
+  // 新增：通过分享ID添加MCP配置
+  @Post('mcps/add-by-share')
+  @ApiOperation({ summary: '通过分享ID添加 MCP 配置' })
+  @ApiResponse({ status: 201, description: '成功添加分享的 MCP 配置' })
+  async addMcpByShareId(@Request() req, @Body() addDto: AddMcpByShareIdDto) {
+    console.log(
+      '🔍 通过分享ID添加MCP配置 - 用户邮箱:',
+      req.user.email,
+      '分享ID:',
+      addDto.shareId,
+    );
+    const newMcps = await this.cursorService.addMcpByShareId(
+      req.user.email,
+      addDto,
+    );
+
+    return {
+      code: 201,
+      message: `成功添加 ${newMcps.length} 个新的 MCP 配置`,
+      data: {
+        addedMcps: newMcps,
+        count: newMcps.length,
+      },
+    };
+  }
+
+  // 新增：获取用户的分享列表
+  @Get('shares')
+  @ApiOperation({ summary: '获取用户的分享列表' })
+  @ApiResponse({ status: 200, description: '成功获取分享列表' })
+  async getUserShares(@Request() req) {
+    console.log('🔍 获取用户分享列表 - 用户邮箱:', req.user.email);
+    const shares = await this.cursorService.getUserShares(req.user.email);
+
+    return {
+      code: 200,
+      message: '获取分享列表成功',
+      data: {
+        shares: shares.map((share) => ({
+          id: share.id,
+          shareId: share.shareId,
+          title: share.title,
+          description: share.description,
+          usageCount: share.usageCount,
+          enabled: share.enabled,
+          createdAt: share.createdAt,
+          updatedAt: share.updatedAt,
+        })),
+      },
+    };
+  }
+
+  // 新增：删除分享
+  @Delete('shares/:shareId')
+  @ApiOperation({ summary: '删除分享' })
+  @ApiResponse({ status: 200, description: '成功删除分享' })
+  async deleteShare(@Request() req, @Param('shareId') shareId: string) {
+    console.log('🔍 删除分享 - 用户邮箱:', req.user.email, '分享ID:', shareId);
+    await this.cursorService.deleteShare(shareId, req.user.email);
+
+    return {
+      code: 200,
+      message: '删除分享成功',
     };
   }
 
