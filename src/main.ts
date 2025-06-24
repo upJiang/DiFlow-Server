@@ -45,6 +45,7 @@ async function bootstrap() {
     .setDescription('DIFlow Cursor 插件后端 API')
     .setVersion('1.0')
     .addBearerAuth()
+    .addServer('/diflow', 'API Server with diflow prefix')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('diflow/api', app, document);
